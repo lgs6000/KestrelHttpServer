@@ -357,8 +357,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.FunctionalTests
                         "POST / HTTP/1.1",
                         "Transfer-Encoding: chunked",
                         "",
-                        "g",
-                        "");
+                        "gg");
                     await connection.ReceiveForcedEnd(
                         "HTTP/1.1 400 Bad Request",
                         "Connection: close",
