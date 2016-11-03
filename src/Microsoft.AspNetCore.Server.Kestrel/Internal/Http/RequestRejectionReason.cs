@@ -27,6 +27,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Internal.Http
         MissingCRInHeaderLine,
         TooManyHeaders,
         RequestTimeout,
-        FinalTransferCodingNotChunked
+        FinalTransferCodingNotChunked,
+        LengthRequired
     }
 }
