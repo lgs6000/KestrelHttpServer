@@ -103,7 +103,10 @@ namespace Microsoft.AspNetCore.Server.Kestrel
                     ex = new BadHttpRequestException($"Final transfer coding is not \"chunked\": \"{value}\"", 400);
                     break;
                 case RequestRejectionReason.LengthRequired:
-                    ex = new BadHttpRequestException($"{value} request contains no length indication (no Content-Length or Transfer-Encoding header)", 411);
+                    ex = new BadHttpRequestException($"{value} request contains no Content-Length or Transfer-Encoding header", 411);
+                    break;
+                case RequestRejectionReason.LengthRequiredHttp10:
+                    ex = new BadHttpRequestException($"{value} request contains no Content-Length header", 400);
                     break;
                 default:
                     ex = new BadHttpRequestException("Bad request.", 400);

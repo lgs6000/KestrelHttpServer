@@ -189,6 +189,21 @@ namespace Microsoft.AspNetCore.Server.KestrelTests
             }
         }
 
+        [Theory]
+        [InlineData("POST")]
+        [InlineData("PUT")]
+        public async Task BadRequestIfMethodRequiresLengthButNoContentLengthInHttp10Request(string method)
+        {
+            using (var server = new TestServer(context => { return Task.FromResult(0); }))
+            {
+                using (var connection = server.CreateConnection())
+                {
+                    await connection.SendEnd($"{method} / HTTP/1.0\r\n\r\n");
+                    await ReceiveBadRequestResponse(connection, "400 Bad Request", server.Context.DateHeaderValue);
+                }
+            }
+        }
+
         private async Task ReceiveBadRequestResponse(TestConnection connection, string expectedResponseStatusCode, string expectedDateHeaderValue)
         {
             await connection.ReceiveForcedEnd(

@@ -215,7 +215,23 @@ namespace Microsoft.AspNetCore.Server.KestrelTests
                     MessageBody.For(HttpVersion.Http11, new FrameRequestHeaders(), input.FrameContext));
 
                 Assert.Equal(411, ex.StatusCode);
-                Assert.Equal($"{method} request contains no length indication (no Content-Length or Transfer-Encoding header)", ex.Message);
+                Assert.Equal($"{method} request contains no Content-Length or Transfer-Encoding header", ex.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData("POST")]
+        [InlineData("PUT")]
+        public void ForThrowsWhenMethodRequiresLengthButNoContentLengthSetHttp10(string method)
+        {
+            using (var input = new TestInput())
+            {
+                input.FrameContext.Method = method;
+                var ex = Assert.Throws<BadHttpRequestException>(() =>
+                    MessageBody.For(HttpVersion.Http10, new FrameRequestHeaders(), input.FrameContext));
+
+                Assert.Equal(400, ex.StatusCode);
+                Assert.Equal($"{method} request contains no Content-Length header", ex.Message);
             }
         }
 

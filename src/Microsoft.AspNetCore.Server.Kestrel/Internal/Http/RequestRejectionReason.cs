@@ -28,6 +28,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Internal.Http
         TooManyHeaders,
         RequestTimeout,
         FinalTransferCodingNotChunked,
-        LengthRequired
+        LengthRequired,
+        LengthRequiredHttp10,
     }
 }

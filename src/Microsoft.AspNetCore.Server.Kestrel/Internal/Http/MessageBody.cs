@@ -270,14 +270,14 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Internal.Http
             var unparsedContentLength = headers.HeaderContentLength;
             if (unparsedContentLength.Count > 0)
             {
-                long contentLength;
-                if (!long.TryParse(unparsedContentLength.ToString(), out contentLength) || contentLength < 0)
+                try
+                {
+                    var contentLength = FrameHeaders.ParseContentLength(unparsedContentLength);
+                    return new ForContentLength(keepAlive, contentLength, context);
+                }
+                catch (InvalidOperationException)
                 {
                     context.RejectRequest(RequestRejectionReason.InvalidContentLength, unparsedContentLength);
-                }
-                else
-                {
-                    return new ForContentLength(keepAlive, contentLength, context);
                 }
             }
 
@@ -285,7 +285,8 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Internal.Http
             // Reject with 411 Length Required.
             if (HttpMethods.IsPost(context.Method) || HttpMethods.IsPut(context.Method))
             {
-                context.RejectRequest(RequestRejectionReason.LengthRequired, context.Method);
+                var requestRejectionReason = httpVersion == HttpVersion.Http11 ? RequestRejectionReason.LengthRequired : RequestRejectionReason.LengthRequiredHttp10;
+                context.RejectRequest(requestRejectionReason, context.Method);
             }
 
             return new ForContentLength(keepAlive, 0, context);
