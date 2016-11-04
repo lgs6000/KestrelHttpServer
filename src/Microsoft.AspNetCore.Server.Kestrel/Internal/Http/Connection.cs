@@ -34,6 +34,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Internal.Http
         private ConnectionFilterContext _filterContext;
         private LibuvStream _libuvStream;
         private FilteredStreamAdapter _filteredStreamAdapter;
+        private TaskCompletionSource<object> _filterAppliedTcs = new TaskCompletionSource<object>();
         private Task _readInputTask;
 
         private TaskCompletionSource<object> _socketClosedTcs = new TaskCompletionSource<object>();
@@ -92,6 +93,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Internal.Http
             if (ServerOptions.ConnectionFilter == null)
             {
                 _frame.Start();
+                _filterAppliedTcs.SetResult(null);
             }
             else
             {
@@ -154,15 +156,20 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Internal.Http
         // Called on Libuv thread
         public virtual void OnSocketClosed()
         {
-            if (_filteredStreamAdapter != null)
+            _filterAppliedTcs.Task.ContinueWith((task, state) =>
             {
-                Task.WhenAll(_readInputTask, _frame.StopAsync()).ContinueWith((task, state) =>
+                var connection = (Connection)state;
+
+                if (_filteredStreamAdapter != null)
                 {
-                    var connection = (Connection)state;
-                    connection._filterContext.Connection.Dispose();
-                    connection._filteredStreamAdapter.Dispose();
-                }, this);
-            }
+                    Task.WhenAll(_readInputTask, _frame.StopAsync()).ContinueWith((task2, state2) =>
+                    {
+                        var connection2 = (Connection)state2;
+                        connection2._filterContext.Connection.Dispose();
+                        connection2._filteredStreamAdapter.Dispose();
+                    }, connection);
+                }
+            }, this);
 
             SocketInput.Dispose();
             _socketClosedTcs.TrySetResult(null);
@@ -199,8 +206,8 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Internal.Http
             }
 
             _frame.PrepareRequest = _filterContext.PrepareRequest;
-
             _frame.Start();
+            _filterAppliedTcs.SetResult(null);
         }
 
         private static Libuv.uv_buf_t AllocCallback(UvStreamHandle handle, int suggestedSize, object state)
