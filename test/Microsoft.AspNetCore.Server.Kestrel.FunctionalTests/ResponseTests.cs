@@ -340,15 +340,12 @@ namespace Microsoft.AspNetCore.Server.Kestrel.FunctionalTests
         [Fact]
         public async Task SingleErrorResponseSentWhenAppSwallowsBadRequestException()
         {
+            BadHttpRequestException readException = null;
+
             using (var server = new TestServer(async httpContext =>
             {
-                try
-                {
-                    await httpContext.Request.Body.ReadAsync(new byte[1], 0, 1);
-                }
-                catch (BadHttpRequestException)
-                {
-                }
+                readException = await Assert.ThrowsAsync<BadHttpRequestException>(
+                    async () => await httpContext.Request.Body.ReadAsync(new byte[1], 0, 1));
             }, new TestServiceContext()))
             {
                 using (var connection = server.CreateConnection())
@@ -367,6 +364,8 @@ namespace Microsoft.AspNetCore.Server.Kestrel.FunctionalTests
                         "");
                 }
             }
+
+            Assert.NotNull(readException);
         }
 
         [Fact]
